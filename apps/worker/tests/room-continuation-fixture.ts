@@ -1,13 +1,15 @@
 import { buildCodexAppServerTurnWorkflowId, roomAgentSupervisorQueueItemSchema } from "@space/contracts";
 import { InMemorySpaceStore } from "@space/runtime";
 
+/** Builds an in-memory room continuation fixture with a pre-populated supervisor mission. */
 export function continuationFixture(actionType: "OPEN_TYPES" | "CONFIGURE_PANE" = "OPEN_TYPES") {
   const store = new InMemorySpaceStore();
   const room = store.createRoom({ name: "Continuation regression", initialPaneCount: 0 });
   const pane = store.getOrCreateRoomAgentPane(room.id);
   const session = store.createSpaceAgentSession({ paneId: pane.id, roomId: room.id, title: "Room Agent",
     selectedProviderId: null, selectedModelId: null, selectedModelConfigId: null,
-    selectedProviderName: null, selectedModelName: null, selectedReasoningKey: null });
+    selectedProviderName: null, selectedModelName: null, selectedReasoningKey: null, selectedToolIds: null });
+  /** Enqueues a synthetic supervisor turn on the fixture store. */
   function enqueue(suffix: string, prompt = "Open CLI and Chat, then send a story to both.") {
     const item = roomAgentSupervisorQueueItemSchema.parse({ missionId: "mission:continuation", turn: {
       roomId: room.id, paneId: pane.id, prompt, roomAgentOperatorRequest: prompt,

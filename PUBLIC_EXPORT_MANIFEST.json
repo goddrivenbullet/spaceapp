@@ -21679,9 +21679,9 @@
     },
     {
       "path": "apps/worker/package.json",
-      "sourceObjectId": "d7a484ac8fb49132203bfc4d1ab01b1d6d975739",
-      "sha256": "b357357c037bd4c33c50d75618437ff36dc461365eac63d74355de1740de348c",
-      "size": 869
+      "sourceObjectId": "5ec25291ef2c22baf7a1645e1637aa0b3a482b38",
+      "sha256": "27cbb6671976805125a86ddc207d693fde0d88377014123a4bb64a955f5d798e",
+      "size": 1056
     },
     {
       "path": "apps/worker/src/activities.ts",
@@ -22075,9 +22075,9 @@
     },
     {
       "path": "apps/worker/tests/room-continuation-fixture.ts",
-      "sourceObjectId": "340e964e081d823a43250f2bd780f741fe79a3ba",
-      "sha256": "12face2dddea89e0b7493db6d0a8b8b75a59f36ec6fca3369b30918fe8f5b530",
-      "size": 2688
+      "sourceObjectId": "eb3c01cc4807143a029f58c2ec9d4f201ee2bbf0",
+      "sha256": "852f8db31bb49d69f6ad0e1db6cf4a713310a481efab5ad3722eb32853ccd750",
+      "size": 2873
     },
     {
       "path": "apps/worker/tests/room-supervisor-continuation.test.ts",
@@ -22514,8 +22514,8 @@
     {
       "path": "package-lock.json",
       "sourceObjectId": "1ea4513f4be841459363186921c3695db73cfd0a",
-      "sha256": "f6c745fb50ff3c0301e5f7dec24815438f86470f7e7e668496a755d0100d5c1a",
-      "size": 419142
+      "sha256": "86689a35e8302bce8fa35b3a98140353bef8817adfad5b561a8bd475885f1905",
+      "size": 419955
     },
     {
       "path": "package.json",
