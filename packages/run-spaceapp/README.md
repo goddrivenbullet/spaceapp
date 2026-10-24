@@ -49,7 +49,7 @@ RAM and free disk. Docker's CPU and RAM allocation is checked as well.
 | medium | 4 | 11 GiB | 8 GiB | small + background workflow/integration workers |
 | large | 8 | 15 GiB | 11 GiB | medium + managed Chromium, larger limits |
 
-Use `install --profile small|medium|large` to choose explicitly. Existing
+Use `npx --yes run-spaceapp@latest install --profile small|medium|large` to choose explicitly, or pass `--engine podman` on Linux and macOS to run with rootless Podman 4.9+ / 5.x instead of Docker (`--access isolated` only; cgroup v2 with `cpu` and `memory` controller delegation is required on Linux, and an initialized `podman machine` meeting the profile CPU/RAM/disk minimums is required on macOS). Existing
 `light` and `standard` profiles remain compatible. Upgrades preserve the installed
 profile unless you explicitly choose another one. Companions and additional AI
 CLIs remain optional and can be installed when needed.

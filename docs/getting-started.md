@@ -39,6 +39,16 @@ starts the service. Before adding the current user to the `docker` group, it
 explains that the group grants root-level privileges, adds the user
 automatically, and continues in the same command.
 
+### Rootless Podman on Linux and macOS
+
+On Linux (cgroup v2 with `cpu` and `memory` delegation enabled) and macOS (with an initialized `podman machine` meeting the selected profile minimums), you can install and run SpaceApp with rootless Podman 4.9+ or 5.x instead of Docker:
+
+```bash
+npx --yes run-spaceapp@latest install --engine podman
+```
+
+When `--engine podman` is selected (or chosen interactively when Docker is unavailable and Podman is ready), SpaceApp stores `"engine": "podman"` in `config.json`, renders `userns_mode: "keep-id:uid=10001,gid=10001"` and SELinux relabeling (`:z`) for workspace and secret bind mounts in `compose.workspaces.yml`, and runs all subsequent lifecycle commands (`up`, `down`, `status`, `logs`, `doctor`, `backup`, `restore`, `update`, `repair`, `factory-reset`, `uninstall`) through `podman compose`. Podman installations always use `--access isolated`; `--access host-root` and Windows Podman are not supported.
+
 ## macOS
 
 Install Node.js 20.11 or newer, then run in Terminal:

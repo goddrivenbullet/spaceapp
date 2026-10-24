@@ -116,6 +116,7 @@ const ALL_PROVIDERS = new Set(Object.values(PROVIDERS).flat());
 export const CLI_SETTINGS_FILES = Object.freeze([
   "claude/settings.json", "claude/.claude.json", "codex/config.toml", "opencode/config/opencode/opencode.json"
 ]);
+export const INSTALL_ENGINES = Object.freeze(["docker", "podman"]);
 const CONFIG_KEYS = new Set([
   "schemaVersion",
   "version",
@@ -124,6 +125,7 @@ const CONFIG_KEYS = new Set([
   "port",
   "telemetry",
   "profile",
+  "engine",
   "accessMode",
   "workspaces",
   "companionsEnabled",
@@ -182,6 +184,24 @@ export function resolveInstallProfile(requestedProfile, resources) {
     if (installResourceChecks(resources, profile).every((check) => check.ok)) return profile;
   }
   return "small";
+}
+
+/**
+ * Resolves and validates the container engine (`docker` or `podman`).
+ *
+ * @param {unknown} requestedEngine - Requested engine name.
+ * @param {string} [existingEngine="docker"] - Existing or fallback engine name.
+ * @returns {"docker" | "podman"} Resolved container engine.
+ */
+export function resolveInstallEngine(requestedEngine, existingEngine = "docker") {
+  const fallback = INSTALL_ENGINES.includes(existingEngine) ? existingEngine : "docker";
+  if (requestedEngine === undefined) {
+    return fallback;
+  }
+  if (INSTALL_ENGINES.includes(requestedEngine)) {
+    return requestedEngine;
+  }
+  throw new Error("Container engine must be docker or podman.");
 }
 
 export function resolveInstallAccessMode(requestedMode, existingMode = "isolated") {
@@ -304,9 +324,16 @@ export function installResourceChecks(resources, profile = "small", { requiredDi
   ];
 }
 
+/**
+ * Creates a default SpaceApp configuration object.
+ *
+ * @param {object} options - Default configuration parameters.
+ * @returns {object} Validated default configuration object.
+ */
 export function createDefaultConfig({
   version,
   profile = "light",
+  engine,
   accessMode = "isolated",
   companionsEnabled = false
 }) {
@@ -314,7 +341,11 @@ export function createDefaultConfig({
   if (!INSTALL_PROFILES.includes(profile)) {
     throw new Error("Default config requires a resolved installation profile.");
   }
+  const resolvedEngine = engine !== undefined ? resolveInstallEngine(engine) : undefined;
   const resolvedAccessMode = resolveInstallAccessMode(accessMode);
+  if (resolvedEngine === "podman" && resolvedAccessMode === "host-root") {
+    throw new Error("Host-root access is not supported with Podman; use --access isolated or --engine docker.");
+  }
   return {
     schemaVersion: CONFIG_SCHEMA_VERSION,
     version,
@@ -323,6 +354,7 @@ export function createDefaultConfig({
     port: 4911,
     telemetry: false,
     profile,
+    ...(resolvedEngine !== undefined ? { engine: resolvedEngine } : {}),
     accessMode: resolvedAccessMode,
     companionsEnabled,
     optionalModules: "none",
@@ -330,6 +362,12 @@ export function createDefaultConfig({
   };
 }
 
+/**
+ * Validates a SpaceApp configuration object.
+ *
+ * @param {object} config - Configuration object to validate.
+ * @returns {object} The validated configuration object.
+ */
 export function validateConfig(config) {
   if (!config || typeof config !== "object" || Array.isArray(config)) {
     throw new Error("SpaceApp config must be an object.");
@@ -361,8 +399,14 @@ export function validateConfig(config) {
   if (!INSTALL_PROFILES.includes(config.profile)) {
     throw new Error("profile must be small, medium, large, light, or standard.");
   }
+  if (config.engine !== undefined && !INSTALL_ENGINES.includes(config.engine)) {
+    throw new Error("engine must be docker or podman.");
+  }
   if (config.accessMode !== "isolated" && config.accessMode !== "host-root") {
     throw new Error("accessMode must be isolated or host-root.");
+  }
+  if (config.engine === "podman" && config.accessMode === "host-root") {
+    throw new Error("Host-root access is not supported with Podman; use --access isolated or --engine docker.");
   }
   if (typeof config.companionsEnabled !== "boolean") {
     throw new Error("companionsEnabled must be boolean.");
@@ -470,6 +514,12 @@ function migrateConfig(config) {
   };
 }
 
+/**
+ * Plans automatic repairs for legacy or invalid SpaceApp configuration fields.
+ *
+ * @param {object} rawConfig - Raw configuration loaded from disk.
+ * @returns {{ actions: object[] }} Planned repair actions.
+ */
 export function planConfigRepairs(rawConfig) {
   const actions = [];
   if (!rawConfig || typeof rawConfig !== "object" || Array.isArray(rawConfig)) {
@@ -507,9 +557,28 @@ export function planConfigRepairs(rawConfig) {
       });
     }
   }
+  if (rawConfig.engine !== undefined && !INSTALL_ENGINES.includes(rawConfig.engine)) {
+    actions.push({
+      type: "reset-invalid-engine",
+      value: rawConfig.engine,
+      detail: `engine "${rawConfig.engine}" is unsupported and will default to "docker".`
+    });
+  }
+  if (rawConfig.engine === "podman" && rawConfig.accessMode === "host-root") {
+    actions.push({
+      type: "reset-podman-host-root",
+      detail: `Host-root access is not supported with Podman; accessMode will be reset to "isolated".`
+    });
+  }
   return { actions };
 }
 
+/**
+ * Applies planned configuration repairs and validates the resulting configuration.
+ *
+ * @param {object} rawConfig - Raw configuration object.
+ * @returns {object} Repaired and validated configuration object.
+ */
 export function applyConfigRepairs(rawConfig) {
   const { actions } = planConfigRepairs(rawConfig);
   const rejected = actions.find((action) => action.type === "reject-companions");
@@ -520,6 +589,12 @@ export function applyConfigRepairs(rawConfig) {
   const convert = actions.find((action) => action.type === "convert-companions-string");
   if (convert) {
     repaired = { ...repaired, companionsEnabled: convert.value === "true" };
+  }
+  if (actions.some((action) => action.type === "reset-invalid-engine")) {
+    repaired = { ...repaired, engine: "docker" };
+  }
+  if (actions.some((action) => action.type === "reset-podman-host-root")) {
+    repaired = { ...repaired, accessMode: "isolated" };
   }
   return validateConfig(repaired);
 }
@@ -671,29 +746,47 @@ export async function userNamespacesUsable(platform = process.platform, read = (
 // mounts). Only where the sandbox can run: elsewhere it would widen the container for nothing.
 const CLI_SANDBOX_OPTIONS = ["    security_opt:", "      - seccomp=./seccomp-cli.json", "      - apparmor=unconfined"];
 
+/**
+ * Renders the `compose.workspaces.yml` override file for workspace mounts, multi-user CLI containers, and Podman rootless settings.
+ *
+ * @param {object} config - SpaceApp configuration object.
+ * @param {object} [options={}] - Rendering options.
+ * @param {boolean} [options.cliSandbox=false] - Whether unprivileged user namespaces are available for the CLI sandbox.
+ * @returns {string} YAML content for `compose.workspaces.yml`.
+ */
 export function renderWorkspaceCompose(config, { cliSandbox = false } = {}) {
   validateConfig(config);
-  const mounts = config.workspaces.flatMap((workspace) => [
-    "      - type: bind",
-    `        source: ${JSON.stringify(workspace.hostPath)}`,
-    `        target: ${JSON.stringify(workspace.containerPath)}`,
-    `        read_only: ${workspace.readOnly}`
-  ]);
-  const service = mounts.length > 0
-    ? ["    volumes:", ...mounts]
-    : ["    volumes: []"];
-  if (config.users === undefined) {
-    return ["services:", "  spaceapp-core:", ...service, "  spaceapp-cli:", ...service, ...(cliSandbox ? CLI_SANDBOX_OPTIONS : []), ""].join("\n");
-  }
-  // "user enable": accounts are on, and the core starts a USER's CLIs only in that user's own container.
-  const users = config.users;
-  const settings = profileRuntimeSettings(config.profile);
+  const isPodman = config.engine === "podman";
   const bind = (workspace) => [
     "      - type: bind",
     `        source: ${JSON.stringify(workspace.hostPath)}`,
     `        target: ${JSON.stringify(workspace.containerPath)}`,
-    `        read_only: ${workspace.readOnly}`
+    `        read_only: ${workspace.readOnly}`,
+    ...(isPodman ? ["        bind:", "          selinux: z"] : [])
   ];
+  const mounts = config.workspaces.flatMap(bind);
+  const service = mounts.length > 0
+    ? ["    volumes:", ...mounts]
+    : ["    volumes: []"];
+  const userns = isPodman ? ['    userns_mode: "keep-id:uid=10001,gid=10001"'] : [];
+  const podmanInit = isPodman ? ["  codex-sessions-init:", ...userns] : [];
+  if (config.users === undefined) {
+    return [
+      "services:",
+      "  spaceapp-core:",
+      ...userns,
+      ...service,
+      "  spaceapp-cli:",
+      ...userns,
+      ...service,
+      ...(cliSandbox ? CLI_SANDBOX_OPTIONS : []),
+      ...podmanInit,
+      ""
+    ].join("\n");
+  }
+  // "user enable": accounts are on, and the core starts a USER's CLIs only in that user's own container.
+  const users = config.users;
+  const settings = profileRuntimeSettings(config.profile);
   const userServices = users.flatMap((user) => {
     const slug = userSlug(user.id);
     return [
@@ -702,6 +795,7 @@ export function renderWorkspaceCompose(config, { cliSandbox = false } = {}) {
       "    image: ghcr.io/oll4com/spaceapp-cli:${SPACEAPP_IMAGE_TAG}${SPACEAPP_CLI_IMAGE_DIGEST:-}",
       "    restart: unless-stopped",
       "    init: true",
+      ...userns,
       "    security_opt:",
       "      - no-new-privileges:true",
       ...(cliSandbox ? CLI_SANDBOX_OPTIONS.slice(1) : []),
@@ -716,7 +810,7 @@ export function renderWorkspaceCompose(config, { cliSandbox = false } = {}) {
       `      - spaceapp-memory-${slug}:/var/lib/spaceapp/memory`,
       `      - spaceapp-cli-socket-${slug}:/run/spaceapp-cli`,
       `      - spaceapp-workspaces-${slug}:/workspaces`,
-      `      - ./secrets/users/${slug}/providers:/run/spaceapp-secrets/providers:ro`,
+      `      - ./secrets/users/${slug}/providers:/run/spaceapp-secrets/providers:ro${isPodman ? ",z" : ""}`,
       ...user.workspaces.flatMap(bind),
       // Its own network: internet only, never the owner's internal services (temporal, companions) or other users.
       "    networks:",
@@ -726,16 +820,19 @@ export function renderWorkspaceCompose(config, { cliSandbox = false } = {}) {
   return [
     "services:",
     "  spaceapp-core:",
+    ...userns,
     "    environment:",
     '      SPACE_MULTI_USER_ENABLED: "true"',
     "      SPACE_CLI_HOST_SOCKETS_FILE: /etc/spaceapp/cli-hosts.json",
     "    volumes:",
     ...(mounts.length > 0 ? mounts : []),
-    "      - ./cli-hosts.json:/etc/spaceapp/cli-hosts.json:ro",
+    `      - ./cli-hosts.json:/etc/spaceapp/cli-hosts.json:ro${isPodman ? ",z" : ""}`,
     ...users.map((user) => `      - spaceapp-cli-socket-${userSlug(user.id)}:/run/spaceapp-cli-users/${userSlug(user.id)}`),
     "  spaceapp-cli:",
+    ...userns,
     ...service,
     ...(cliSandbox ? CLI_SANDBOX_OPTIONS : []),
+    ...podmanInit,
     ...userServices,
     ...(users.length > 0 ? ["volumes:"] : []),
     ...users.flatMap((user) => ["cli-state", "memory", "cli-socket", "workspaces"].map((kind) => `  spaceapp-${kind}-${userSlug(user.id)}: {}`)),
@@ -781,10 +878,19 @@ export function renderHostAccessCompose(config) {
   ].join("\n");
 }
 
+/**
+ * Builds a Compose command specification for the configured container engine (`docker` or `podman`).
+ *
+ * @param {string} action - Compose action name.
+ * @param {string} root - SpaceApp home directory.
+ * @param {object} [options={}] - Compose command options, including `engine` and `profile`.
+ * @returns {{ command: "docker" | "podman", args: string[] }} Command specification.
+ */
 export function composeCommand(action, root, options = {}) {
   validateHome(root);
   const stateRoot = options.stateRoot ?? root;
   validateHome(stateRoot);
+  const engine = resolveInstallEngine(options.engine ?? options.config?.engine, "docker");
   const profile = options.profile ?? "standard";
   const settings = profileRuntimeSettings(profile);
   const base = [
@@ -905,7 +1011,7 @@ export function composeCommand(action, root, options = {}) {
   if (!selected) {
     throw new Error(`Unsupported Compose action "${action}".`);
   }
-  return { command: "docker", args: [...base, ...selected] };
+  return { command: engine, args: [...base, ...selected] };
 }
 
 export function composeProjectName(root) {
@@ -952,9 +1058,17 @@ export async function writeRuntimeFiles(root, config) {
   await atomicWrite(join(root, "compose.host-access.yml"), renderHostAccessCompose(config));
 }
 
+/**
+ * Prepares or updates a SpaceApp installation directory, secrets, and configuration.
+ *
+ * @param {string} root - SpaceApp installation directory.
+ * @param {object} options - Installation options.
+ * @returns {Promise<{ config: object, setupToken: string | null }>} Prepared config and initial setup token.
+ */
 export async function prepareInstallation(root, {
   version,
   profile,
+  engine,
   accessMode,
   companionsEnabled
 }) {
@@ -969,8 +1083,10 @@ export async function prepareInstallation(root, {
     ? undefined
     : resolveInstallProfile(profile, profile === "auto" ? await inspectSystemResources(root) : totalmem());
   let config;
+  let loadedExisting = false;
   try {
     config = await loadConfig(root);
+    loadedExisting = true;
   } catch (error) {
     if (error?.code !== "ENOENT") {
       throw error;
@@ -978,9 +1094,23 @@ export async function prepareInstallation(root, {
     config = createDefaultConfig({
       version,
       profile: resolvedProfile ?? "light",
+      ...(engine !== undefined ? { engine: resolveInstallEngine(engine) } : {}),
       accessMode: resolveInstallAccessMode(accessMode),
       companionsEnabled
     });
+  }
+  if (loadedExisting && engine !== undefined) {
+    const existingEngine = resolveInstallEngine(config.engine, "docker");
+    const requestedEngine = resolveInstallEngine(engine, existingEngine);
+    if (requestedEngine !== existingEngine) {
+      throw new Error(
+        `Existing SpaceApp installation uses ${existingEngine}; switching to ${requestedEngine} in place is not supported. ` +
+        `Back up with "${UNIVERSAL_COMMAND} backup", run "${UNIVERSAL_COMMAND} uninstall", and install again with "--engine ${requestedEngine}".`
+      );
+    }
+    if (config.engine !== requestedEngine) {
+      config = { ...config, engine: requestedEngine };
+    }
   }
   if (config.version !== version) {
     config = {

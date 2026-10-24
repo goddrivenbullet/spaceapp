@@ -5,11 +5,12 @@ import { tmpdir } from "node:os";
 import { join, posix, win32 } from "node:path";
 import process from "node:process";
 import { createInterface } from "node:readline/promises";
-import { Readable } from "node:stream";
+import { Readable, Writable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { UNIVERSAL_INSTALL_COMMAND } from "./package-info.mjs";
+import { PROFILE_REQUIREMENTS } from "./index.mjs";
 
 const DOCKER_TERMS_URL = "https://www.docker.com/legal/docker-subscription-service-agreement/";
 const DOWNLOAD_TIMEOUT_MS = 30 * 60 * 1_000;
@@ -119,6 +120,293 @@ export async function prepareDockerCliPath({
   return directory;
 }
 
+/**
+ * Captures stdout and exit code from a command execution probe.
+ *
+ * @param {Function} execute - Command executor function.
+ * @param {object} spec - Command specification.
+ * @param {object} [stdin] - Optional input stream.
+ * @returns {Promise<{ code: number, stdout: string }>} Exit code and captured stdout.
+ */
+async function captureCommandOutput(execute, spec, stdin) {
+  let output = "";
+  const stdout = new Writable({
+    write(chunk, _encoding, callback) {
+      if (output.length < 1024 * 1024) {
+        output += chunk.toString();
+      }
+      callback();
+    }
+  });
+  try {
+    const code = await execute(spec, { stdin, stdout, stderr: null });
+    return { code, stdout: output.trim() };
+  } catch {
+    return { code: 1, stdout: "" };
+  }
+}
+
+/**
+ * Parses a Podman version string into major, minor, and patch numbers.
+ *
+ * @param {string} raw - Raw version text from `podman --version` or `podman info`.
+ * @returns {{ raw: string, version: string, major: number, minor: number, patch: number } | null} Parsed version info or null.
+ */
+export function parsePodmanVersion(raw) {
+  const text = String(raw || "").trim();
+  const match = /(\d+)\.(\d+)\.(\d+)/.exec(text);
+  if (!match) {
+    return null;
+  }
+  return {
+    raw: text,
+    version: `${match[1]}.${match[2]}.${match[3]}`,
+    major: Number(match[1]),
+    minor: Number(match[2]),
+    patch: Number(match[3])
+  };
+}
+
+/**
+ * Inspects Podman CLI, Compose provider, rootless mode, cgroup v2, and controller delegation.
+ *
+ * @param {object} [options={}] - Inspection options.
+ * @param {Function} options.execute - Command executor.
+ * @param {string} [options.platform=process.platform] - Target platform.
+ * @param {object} [options.stdin] - Standard input stream.
+ * @returns {Promise<object>} Podman readiness and diagnostic details.
+ */
+export async function inspectPodmanEnvironment({
+  execute,
+  platform = process.platform,
+  stdin
+} = {}) {
+  const cliProbe = await captureCommandOutput(execute, { command: "podman", args: ["--version"] }, stdin);
+  const composeCode = await execute({ command: "podman", args: ["compose", "version"] }, { stdin, stdout: null, stderr: null });
+  const infoProbe = await captureCommandOutput(execute, { command: "podman", args: ["info", "--format", "json"] }, stdin);
+
+  let info = null;
+  if (infoProbe.code === 0 && infoProbe.stdout) {
+    try {
+      const parsed = JSON.parse(infoProbe.stdout);
+      if (parsed && typeof parsed === "object" && (parsed.host || parsed.version || parsed.store)) {
+        info = parsed;
+      }
+    } catch {
+      info = null;
+    }
+  }
+
+  const parsedVersion = parsePodmanVersion(cliProbe.stdout || info?.version?.Version || "");
+  const version = parsedVersion?.version ?? (info?.version?.Version ? String(info.version.Version) : null);
+  const versionSupported = parsedVersion
+    ? parsedVersion.major > 4 || (parsedVersion.major === 4 && parsedVersion.minor >= 9)
+    : info !== null;
+  const rootless = typeof info?.host?.security?.rootless === "boolean"
+    ? info.host.security.rootless
+    : platform === "darwin"
+      ? true
+      : null;
+  const mode = rootless === true ? "rootless" : rootless === false ? "rootful" : "unknown";
+  const cgroupVersion = info?.host?.cgroupVersion
+    ? String(info.host.cgroupVersion)
+    : platform === "darwin"
+      ? "v2"
+      : "unknown";
+  const cgroupControllers = Array.isArray(info?.host?.cgroupControllers)
+    ? info.host.cgroupControllers.map(String)
+    : [];
+  const cpuDelegated = platform === "darwin" || cgroupControllers.includes("cpu");
+  const memoryDelegated = platform === "darwin" || cgroupControllers.includes("memory");
+  const cgroupOk = platform !== "linux" || rootless !== true || (cgroupVersion === "v2" && cpuDelegated && memoryDelegated);
+
+  let error = null;
+  if (cliProbe.code !== 0) {
+    error = "Podman CLI is not installed or not on PATH. Install Podman 5.x (or 4.9+) and rerun with --engine podman.";
+  } else if (!versionSupported) {
+    error = `Podman ${version || "unknown"} is older than the minimum supported version (4.9+ / 5.x). Upgrade Podman and rerun.`;
+  } else if (composeCode !== 0) {
+    error = "Podman Compose provider is not available. Install docker-compose-v2 or podman-compose so \"podman compose version\" succeeds.";
+  } else if (infoProbe.code !== 0 || !info) {
+    error = platform === "darwin"
+      ? "Podman engine is not running. Run \"podman machine init && podman machine start\" and try again."
+      : "Podman engine is installed but not running or inaccessible. Verify subuid/subgid mappings in /etc/subuid and /etc/subgid.";
+  } else if (!cgroupOk) {
+    const missing = [
+      ...(cgroupVersion !== "v2" ? [`cgroup v2 (found ${cgroupVersion})`] : []),
+      ...(!cpuDelegated ? ["cpu controller"] : []),
+      ...(!memoryDelegated ? ["memory controller"] : [])
+    ].join(", ");
+    error =
+      `Rootless Podman on Linux requires cgroup v2 with delegated cpu and memory controllers (missing: ${missing}). ` +
+      "Configure /etc/systemd/system/user@.service.d/delegate.conf with:\n" +
+      "[Service]\nDelegate=cpu cpuset io memory pids\n" +
+      "Then run \"sudo systemctl daemon-reload\" and log in again.";
+  }
+
+  return {
+    engine: "podman",
+    installed: cliProbe.code === 0 && (Boolean(parsedVersion) || Boolean(info)),
+    ready: cliProbe.code === 0 && versionSupported && composeCode === 0 && infoProbe.code === 0 && Boolean(info) && cgroupOk,
+    cliCode: cliProbe.code,
+    composeCode,
+    infoCode: infoProbe.code,
+    version,
+    versionSupported,
+    rootless,
+    mode,
+    cgroupVersion,
+    cgroupControllers,
+    cpuDelegated,
+    memoryDelegated,
+    cgroupOk,
+    info,
+    error
+  };
+}
+
+/**
+ * Validates macOS `podman machine` CPU, memory, and disk allocations against the selected SpaceApp profile.
+ *
+ * @param {object} [options={}] - Validation options.
+ * @param {Function} options.execute - Command executor.
+ * @param {string} [options.profile="small"] - Canonical SpaceApp installation profile.
+ * @param {object} [options.stderr] - Standard error stream for remediation messages.
+ * @param {object} [options.stdin] - Standard input stream.
+ * @returns {Promise<{ ok: boolean, cpus: number, memoryBytes: number, diskBytes: number, remediation?: string }>} Validation result.
+ */
+export async function validatePodmanMachineResources({
+  execute,
+  profile = "small",
+  stderr,
+  stdin
+} = {}) {
+  const requirements = PROFILE_REQUIREMENTS[profile] ?? PROFILE_REQUIREMENTS.small;
+  const requiredMemoryGiB = { small: 3, medium: 5, large: 7, light: 3, standard: 3 }[profile] ?? 3;
+  const requiredMemoryBytes = requiredMemoryGiB * 1024 ** 3;
+  const recommendedMemoryMiB = Math.max(Math.ceil(requirements.memoryBytes / (1024 ** 2)), 4096);
+  const recommendedDiskGiB = Math.max(Math.ceil(requirements.freshDiskBytes / (1024 ** 3)), 20);
+
+  const probe = await captureCommandOutput(execute, { command: "podman", args: ["machine", "inspect"] }, stdin);
+  let machine = null;
+  if (probe.code === 0 && probe.stdout) {
+    try {
+      const parsed = JSON.parse(probe.stdout);
+      machine = Array.isArray(parsed)
+        ? (parsed.find((item) => item?.State === "running") ?? parsed[0] ?? null)
+        : parsed;
+    } catch {
+      machine = null;
+    }
+  }
+
+  if (!machine || typeof machine !== "object") {
+    const remediation = `podman machine init --cpus ${requirements.cpuCount} --memory ${recommendedMemoryMiB} --disk-size ${recommendedDiskGiB} && podman machine start`;
+    stderr?.write(
+      `Podman machine is not initialized on macOS.\nRun: ${remediation}\n`
+    );
+    return { ok: false, cpus: 0, memoryBytes: 0, diskBytes: 0, remediation };
+  }
+
+  const rawCpus = Number(machine?.Resources?.CPUs ?? machine?.CPUs ?? 0);
+  const rawMemory = Number(machine?.Resources?.Memory ?? machine?.Memory ?? 0);
+  const rawDisk = Number(machine?.Resources?.DiskSize ?? machine?.DiskSize ?? 0);
+
+  const memoryBytes = rawMemory > 1024 * 1024 ? rawMemory : rawMemory * 1024 ** 2;
+  const diskBytes = rawDisk > 1024 * 1024 ? rawDisk : rawDisk * 1024 ** 3;
+
+  const cpusOk = rawCpus >= requirements.cpuCount;
+  const memoryOk = memoryBytes >= requiredMemoryBytes;
+  const diskOk = diskBytes >= requirements.freshDiskBytes;
+
+  if (!cpusOk || !memoryOk || !diskOk) {
+    const nextCpus = Math.max(rawCpus || 0, requirements.cpuCount);
+    const nextMemoryMiB = Math.max(Math.round(memoryBytes / (1024 ** 2)), recommendedMemoryMiB);
+    const nextDiskGiB = Math.max(Math.round(diskBytes / (1024 ** 3)), recommendedDiskGiB);
+    const remediation =
+      `podman machine stop && podman machine set --cpus ${nextCpus} --memory ${nextMemoryMiB} --disk-size ${nextDiskGiB} && podman machine start`;
+    stderr?.write(
+      `Podman machine resources are insufficient for the "${profile}" profile ` +
+      `(${rawCpus} CPUs, ${(memoryBytes / 1024 ** 3).toFixed(1)} GiB memory, ${(diskBytes / 1024 ** 3).toFixed(1)} GiB disk; ` +
+      `requires >=${requirements.cpuCount} CPUs, >=${requiredMemoryGiB} GiB memory, >=${(requirements.freshDiskBytes / 1024 ** 3).toFixed(1)} GiB disk).\n` +
+      `Run: ${remediation}\n`
+    );
+    return { ok: false, cpus: rawCpus, memoryBytes, diskBytes, remediation };
+  }
+
+  return { ok: true, cpus: rawCpus, memoryBytes, diskBytes };
+}
+
+/**
+ * Inspects container engine diagnostics (engine, version, rootless/rootful mode, cgroup version, and CPU/memory limit delegation).
+ *
+ * @param {object} [options={}] - Inspection options.
+ * @param {Function} options.execute - Command executor.
+ * @param {"docker" | "podman"} [options.engine="docker"] - Configured container engine.
+ * @param {string} [options.platform=process.platform] - Host platform.
+ * @param {object} [options.stdin] - Standard input stream.
+ * @returns {Promise<object>} Diagnostic summary for doctor and support-bundle.
+ */
+export async function inspectContainerEngine({
+  execute,
+  engine = "docker",
+  platform = process.platform,
+  stdin
+} = {}) {
+  if (engine === "podman") {
+    const podman = await inspectPodmanEnvironment({ execute, platform, stdin });
+    return {
+      engine: "podman",
+      ready: podman.ready,
+      version: podman.version ?? "unknown",
+      mode: podman.mode,
+      cgroupVersion: podman.cgroupVersion,
+      limits: {
+        cpuDelegated: podman.cpuDelegated,
+        memoryDelegated: podman.memoryDelegated
+      }
+    };
+  }
+  const infoProbe = await captureCommandOutput(
+    execute,
+    { command: "docker", args: ["info", "--format", "{{json .}}"] },
+    stdin
+  );
+  let info = null;
+  if (infoProbe.code === 0 && infoProbe.stdout) {
+    try {
+      info = JSON.parse(infoProbe.stdout);
+    } catch {
+      info = null;
+    }
+  }
+  const securityOptions = Array.isArray(info?.SecurityOptions) ? info.SecurityOptions.map(String) : [];
+  const mode = info
+    ? (securityOptions.some((opt) => opt.includes("rootless")) ? "rootless" : "rootful")
+    : "unknown";
+  const rawCgroup = info?.CgroupVersion ? String(info.CgroupVersion) : null;
+  const cgroupVersion = rawCgroup ? (rawCgroup.startsWith("v") ? rawCgroup : `v${rawCgroup}`) : "unknown";
+  const cpuDelegated = info ? info.CPUShares !== false && info.CPUSet !== false : true;
+  const memoryDelegated = info ? info.MemoryLimit !== false : true;
+  return {
+    engine: "docker",
+    ready: infoProbe.code === 0,
+    version: info?.ServerVersion ? String(info.ServerVersion) : "unknown",
+    mode,
+    cgroupVersion,
+    limits: {
+      cpuDelegated,
+      memoryDelegated
+    }
+  };
+}
+
+/**
+ * Ensures the configured container engine (`docker` or `podman`) is installed, running, and ready.
+ *
+ * @param {object} options - Prerequisite check options.
+ * @returns {Promise<{ code: number, reexecuted: boolean, engine?: "docker" | "podman" }>} Readiness result.
+ */
 export async function ensureDockerAvailable({
   platform = process.platform,
   arch = process.arch,
@@ -132,12 +420,69 @@ export async function ensureDockerAvailable({
   pathExists = fileExists,
   sleep = wait,
   osRelease,
+  engine,
   installArgs,
   scheduleResume = scheduleWindowsInstallResume,
   confirmRestart = confirmWindowsRestart
 }) {
+  const requestedEngine = engine ?? installArgs?.requestedEngine;
+  if (requestedEngine === "podman") {
+    if (platform === "win32") {
+      stderr.write("Podman is only supported on Linux and macOS. Use --engine docker on Windows.\n");
+      return { code: 1, reexecuted: false };
+    }
+    if (installArgs?.requestedAccessMode === "host-root") {
+      stderr.write("Host-root access is not supported with Podman; use --access isolated or --engine docker.\n");
+      return { code: 1, reexecuted: false };
+    }
+    const podman = await inspectPodmanEnvironment({ execute, platform, stdin });
+    if (!podman.ready) {
+      stderr.write(`${podman.error || "Podman is not ready."}\n`);
+      return { code: 1, reexecuted: false };
+    }
+    if (platform === "darwin") {
+      const profile = installArgs?.requestedProfile && installArgs.requestedProfile !== "auto"
+        ? installArgs.requestedProfile
+        : "small";
+      const machineCheck = await validatePodmanMachineResources({ execute, profile, stderr, stdin });
+      if (!machineCheck.ok) {
+        return { code: 1, reexecuted: false };
+      }
+    }
+    return { code: 0, reexecuted: false, engine: "podman" };
+  }
   if (await dockerIsReady(execute)) {
     return { code: 0, reexecuted: false };
+  }
+  if (
+    requestedEngine === undefined &&
+    installArgs?.allowPodmanFallback &&
+    platform !== "win32" &&
+    installArgs?.requestedAccessMode !== "host-root"
+  ) {
+    const podman = await inspectPodmanEnvironment({ execute, platform, stdin });
+    if (podman.ready) {
+      const accepted = installArgs?.usePodman === true || installArgs?.autoConfirm === true
+        ? true
+        : await confirmQuestion({
+            stdin,
+            stdout,
+            question: "Docker is not available, but rootless Podman is ready. Use Podman in isolated mode instead of installing Docker? [y/N] "
+          });
+      if (accepted) {
+        if (platform === "darwin") {
+          const profile = installArgs?.requestedProfile && installArgs.requestedProfile !== "auto"
+            ? installArgs.requestedProfile
+            : "small";
+          const machineCheck = await validatePodmanMachineResources({ execute, profile, stderr, stdin });
+          if (!machineCheck.ok) {
+            return { code: 1, reexecuted: false };
+          }
+        }
+        stdout.write("Using rootless Podman in isolated mode.\n");
+        return { code: 0, reexecuted: false, engine: "podman" };
+      }
+    }
   }
   if (platform === "win32") {
     return ensureWindowsDocker({
