@@ -8,8 +8,8 @@
     {
       "path": ".gitignore",
       "sourceObjectId": "1fdf2ac77a391fc36521502732002c96a11913d4",
-      "sha256": "18242d3b694d31c2e42ccf6b02261a946906352537ab4b83a5f3278b09584aea",
-      "size": 1144
+      "sha256": "f0cc64227075a2c4c76b6bb8f02561135acc677598ed94514d5de4bd986e08cb",
+      "size": 1156
     },
     {
       "path": ".nvmrc",
@@ -19,9 +19,9 @@
     },
     {
       "path": "CONTRIBUTING.md",
-      "sourceObjectId": "078772388754304e33d238fefaad2f04e9120107",
-      "sha256": "14f559c40ed46089c3fb74339d1b225cdd817fc61ef5a39bf1dce8ea28a83216",
-      "size": 5143
+      "sourceObjectId": "d67f5cb57dea5201b685c9509c32996721005c10",
+      "sha256": "262177eea5813f896978612f135139f41278bcb413a789c51c199869117bd542",
+      "size": 10367
     },
     {
       "path": "LICENSE",
@@ -8864,8 +8864,8 @@
     {
       "path": "apps/api/src/app.ts",
       "sourceObjectId": "c26637144f8193f3a1a4a7fbb9fc393aed9cbf90",
-      "sha256": "d159a1e25221022c84a12e4775f81ccfd7f53f5658049a9f16a91a69a67733b6",
-      "size": 461667
+      "sha256": "743a1a6f742bf9b65bab6911fed498f61ed40fe781199d73368ea9e5aef4dbe3",
+      "size": 461790
     },
     {
       "path": "apps/api/src/artifact-read-routes.ts",
@@ -11372,8 +11372,8 @@
     {
       "path": "apps/api/src/storage-readiness.ts",
       "sourceObjectId": "c0a80680b8933e99ef1bc4293f95fd7c42186ea4",
-      "sha256": "7f7eaa10474f95ac805d44e7db6b5ad0dbed478a1f90628f0a639f68fbd20a93",
-      "size": 2153
+      "sha256": "1963e1125775c096eac75139b03dfa91e17d7aaedbe84ca12ccbb9ac9f37eb7c",
+      "size": 2223
     },
     {
       "path": "apps/api/src/stranded-chat-runs.ts",
@@ -13993,9 +13993,9 @@
     },
     {
       "path": "apps/api/tests/storage-warning.test.ts",
-      "sourceObjectId": "607b8b4bc841321d49904f00d98246ef7cb17109",
-      "sha256": "3231eca0f579422a9a2a2e4a1216a54028ee373a0d718b527326d30e82ac7650",
-      "size": 3192
+      "sourceObjectId": "423a9f9162c6e8995b4ba8ed948c1e745204713c",
+      "sha256": "8bd73be3444d1e367a23dfc7d4cbd98c7be83a4eb8b66db389ebcc66cfe64d0f",
+      "size": 4558
     },
     {
       "path": "apps/api/tests/stranded-chat-runs.test.ts",
@@ -21662,8 +21662,8 @@
     {
       "path": "apps/web/vite.config.ts",
       "sourceObjectId": "440a79e31a3f86df0c66bb67ed1d44a4dbcba128",
-      "sha256": "6903aa14b349193f17c903d4c14f984dbb547868a650ef3acc7a7f12b9d8849c",
-      "size": 2700
+      "sha256": "af28f56eb92bb9ecc6773d6d0a754104fb1a619d17d21be1c733fe07c9f4325f",
+      "size": 2882
     },
     {
       "path": "apps/web/vite.demo-boundary.ts",
@@ -22520,8 +22520,8 @@
     {
       "path": "package.json",
       "sourceObjectId": "2287c056d6ea7bc1f3453a4920f84a5341acbc38",
-      "sha256": "96b14899811a260327ed0d7253bba140e9a4ed15571d4ae422d6b2dd16861984",
-      "size": 4221
+      "sha256": "2cd961f9cf2fec4c5862e244d6dd993aaceea6c71d0d548a29b0d7279deef44c",
+      "size": 4339
     },
     {
       "path": "packages/browser-host/package.json",

@@ -1271,7 +1271,7 @@ function createDefaultActivityLogService(config: SpaceApiConfig, store: SpaceSto
   return new ActivityLogService({ repository });
 }
 
-
+/** Creates and configures the SpaceApp Fastify application instance and its route handlers. */
 export async function createApp(options: CreateAppOptions = {}): Promise<FastifyInstance> {
   const apiStartedAt = new Date().toISOString();
   const config = options.config ?? getApiConfig(process.env);
@@ -1788,7 +1788,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<Fastify
     try { observability.observeWorkerReadiness(readiness); } catch { /* metrics never fail readiness */ }
     return readiness;
   };
-  const storageReadinessChecker = options.storageReadinessChecker ?? collectStorageReadiness;
+  const storageReadinessChecker = options.storageReadinessChecker ?? (() => collectStorageReadiness(config.installRoot));
   const spaceCapabilityInventoryCollector = options.spaceCapabilityInventoryCollector ?? collectDefaultSpaceCapabilityInventory;
   const spaceMemorySearcher = options.spaceMemorySearcher ?? ((q) => searchDefaultSpaceMemory(q, decisionsService));
   const canonicalMemory =
