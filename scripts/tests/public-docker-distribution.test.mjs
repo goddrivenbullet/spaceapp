@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { lstat, mkdtemp, readFile, readlink, rm, writeFile } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, readFile, readlink, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
@@ -328,4 +328,50 @@ test("core seeds generic starter memory only when mutable owner memory is absent
   assert.doesNotMatch(core, /gemini_history|SPACE_GEMINI_MEMORY/);
   assert.match(starter, /^# SpaceApp Memory/m);
   assert.doesNotMatch(starter, /\/etc\/docs|\/srv\/space|spaceapp-user|oll4\.com/i);
+});
+
+test("per-service stages ship only each target's workspace dependency closure and prune cross-arch native prebuilds", async () => {
+  const dockerfile = await readFile(join(root, "Dockerfile"), "utf8");
+  const runtimeStage = dockerfile.match(/FROM [^\n]+ AS runtime-base([\s\S]*?)(?=\nFROM |\s*$)/)?.[1] || "";
+  const coreStage = dockerfile.match(/FROM runtime-base AS core([\s\S]*?)(?=\nFROM |\s*$)/)?.[1] || "";
+  const browserStage = dockerfile.match(/FROM runtime-base AS browser([\s\S]*?)(?=\nFROM |\s*$)/)?.[1] || "";
+  const cliStage = dockerfile.match(/FROM runtime-base AS cli([\s\S]*?)(?=\nFROM |\s*$)/)?.[1] || "";
+
+  assert.doesNotMatch(runtimeStage, /COPY --from=build[^\n]*\/app\/(?:node_modules|apps|packages)\b/);
+  assert.match(dockerfile, /FROM build AS deps-core[\s\S]*?sh deploy\/docker\/prune-native-prebuilds\.sh "\$TARGETARCH" node_modules/);
+  assert.match(dockerfile, /FROM build AS deps-browser[\s\S]*?sh deploy\/docker\/prune-native-prebuilds\.sh "\$TARGETARCH" node_modules/);
+  assert.match(dockerfile, /FROM build AS deps-cli[\s\S]*?sh deploy\/docker\/prune-native-prebuilds\.sh "\$TARGETARCH" node_modules/);
+  assert.match(coreStage, /COPY --from=deps-core --chown=spaceapp:spaceapp \/app\/node_modules \.\/node_modules/);
+  assert.match(browserStage, /COPY --from=deps-browser --chown=spaceapp:spaceapp \/app\/node_modules \.\/node_modules/);
+  assert.match(browserStage, /apt-get install -y --no-install-recommends chromium fonts-liberation liblzma5 xvfb/);
+  assert.match(cliStage, /COPY --from=deps-cli --chown=spaceapp:spaceapp \/app\/node_modules \.\/node_modules/);
+  assert.doesNotMatch(cliStage, /\/app\/apps\/|\/app\/packages\/(?:db|gateway|browser-host)/);
+
+  const fixture = await mkdtemp(join(tmpdir(), "spaceapp-prune-prebuilds-"));
+  try {
+    const nm = join(fixture, "node_modules");
+    for (const dir of [
+      "@swc/core-linux-x64-gnu",
+      "@swc/core-linux-arm64-gnu",
+      "@napi-rs/canvas-linux-x64-gnu",
+      "@napi-rs/canvas-linux-arm64-gnu",
+      "@temporalio/core-bridge/releases/x86_64-unknown-linux-gnu",
+      "@temporalio/core-bridge/releases/aarch64-unknown-linux-gnu",
+      "node-pty/prebuilds/linux-x64",
+      "node-pty/prebuilds/darwin-arm64"
+    ]) {
+      await mkdir(join(nm, dir), { recursive: true });
+    }
+    execFileSync("sh", [join(root, "deploy", "docker", "prune-native-prebuilds.sh"), "amd64", nm]);
+    assert.ok((await lstat(join(nm, "@swc/core-linux-x64-gnu"))).isDirectory());
+    await assert.rejects(lstat(join(nm, "@swc/core-linux-arm64-gnu")));
+    assert.ok((await lstat(join(nm, "@napi-rs/canvas-linux-x64-gnu"))).isDirectory());
+    await assert.rejects(lstat(join(nm, "@napi-rs/canvas-linux-arm64-gnu")));
+    assert.ok((await lstat(join(nm, "@temporalio/core-bridge/releases/x86_64-unknown-linux-gnu"))).isDirectory());
+    await assert.rejects(lstat(join(nm, "@temporalio/core-bridge/releases/aarch64-unknown-linux-gnu")));
+    assert.ok((await lstat(join(nm, "node-pty/prebuilds/linux-x64"))).isDirectory());
+    await assert.rejects(lstat(join(nm, "node-pty/prebuilds/darwin-arm64")));
+  } finally {
+    await rm(fixture, { recursive: true, force: true });
+  }
 });

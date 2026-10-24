@@ -8,14 +8,22 @@ const mebibyte = 1024 * 1024;
 // application adds production dependencies pdfjs-dist with @napi-rs/canvas
 // (81 MiB, API PDF handling), typescript (23 MiB, peer of @t3-oss/env-core) and
 // js-tiktoken (22 MiB, Space Gateway token counting).
-// 1.1.5 raised core again: linux/arm64 measured 1066.9 MiB and linux/amd64 1045.0 MiB (sqlite3 in the image,
-// the 1.1.5 application); the first public release run failed the arm64 build at 1050 MiB.
+// Per-service images (issue #64) lowered every budget: each target installs only
+// the workspaces its entrypoint runs and cross-platform native prebuilds are
+// pruned. Measured with this script on both architectures:
+//   linux/amd64  core 247.0 MiB, browser 414.3 MiB, cli 350.3 MiB
+//   linux/arm64  core 247.6 MiB, browser 414.6 MiB, cli 255.2 MiB
+// budgets sit above the larger of the two per target, plus margin for drift.
 export const containerImageSizeBudgets = Object.freeze({
-  core: 1100 * mebibyte,
-  browser: 1750 * mebibyte,
-  cli: 2800 * mebibyte
+  core: 300 * mebibyte,
+  browser: 480 * mebibyte,
+  cli: 420 * mebibyte
 });
 
+/**
+ * Evaluates whether an uncompressed container image size fits within its per-target budget ceiling.
+ * @param {{ target: string, sizeBytes: number }} options
+ */
 export function evaluateContainerImageSize({ target, sizeBytes }) {
   const budgetBytes = containerImageSizeBudgets[target];
   if (budgetBytes === undefined) {
@@ -35,15 +43,24 @@ export function evaluateContainerImageSize({ target, sizeBytes }) {
   };
 }
 
+/**
+ * Reads a named CLI option value from an argument list.
+ */
 function optionValue(args, name) {
   const index = args.indexOf(name);
   return index === -1 ? undefined : args[index + 1];
 }
 
+/**
+ * Formats a byte count as a human-readable MiB string.
+ */
 function formatMebibytes(bytes) {
   return `${(bytes / mebibyte).toFixed(1)} MiB`;
 }
 
+/**
+ * Inspects the uncompressed byte size of a local Docker image.
+ */
 export function inspectContainerImageSize(image) {
   const output = execFileSync(
     "docker",
@@ -53,6 +70,9 @@ export function inspectContainerImageSize(image) {
   return Number(output);
 }
 
+/**
+ * CLI entrypoint that inspects a built container image and enforces its target size ceiling.
+ */
 export function runContainerImageSizeBudget(args = process.argv.slice(2)) {
   const target = optionValue(args, "--target");
   const image = optionValue(args, "--image");
