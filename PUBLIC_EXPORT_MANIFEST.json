@@ -10393,9 +10393,9 @@
     },
     {
       "path": "apps/api/src/memory-graph-routes.ts",
-      "sourceObjectId": "396e533dac265ca550730f1b168f8d5b0b1b8d52",
-      "sha256": "cb12080596d2ffd8003a5f428e09c003c505c7f933bb9a03e1714c59ab99bb14",
-      "size": 46898
+      "sourceObjectId": "df427e9229d74dd6934271e4f0c0cb4e23230483",
+      "sha256": "6e76bc85df09015e5585079398027a3db6dbac0b1250706830859ffac1073553",
+      "size": 47898
     },
     {
       "path": "apps/api/src/memory-graph-service.ts",
@@ -13100,8 +13100,8 @@
     {
       "path": "apps/api/tests/memory-graph-api.test.ts",
       "sourceObjectId": "1b9d8dc0ffb99b36b0c5da49691731dd7dac321b",
-      "sha256": "9c2e9b100c355999acb73d4ca305eaabf0a45c043bf20d1e12f34fd144e93a22",
-      "size": 58770
+      "sha256": "ecf09a7b5e683f2cbb087d4d3ce24b5ecad3b8d19fe3082f290d1fcf8f00b2d4",
+      "size": 60492
     },
     {
       "path": "apps/api/tests/memory-graph-service-lifecycle.test.ts",
@@ -15074,8 +15074,8 @@
     {
       "path": "apps/web/src/demo/DemoStore.ts",
       "sourceObjectId": "0e7407c906ade1b652c8bb815242a3a0cfe5c333",
-      "sha256": "f2a8fc79c6389aed461f2fa3b70a7cc80ccd301a6a305bf20b69a01e84dc961f",
-      "size": 137399
+      "sha256": "eab5b5f4820e636cb3c5c2474c72cda02fdb92b429641e8547f4b4e3f2e53e5a",
+      "size": 139082
     },
     {
       "path": "apps/web/src/demo/FeatureShowcase.tsx",
@@ -17413,9 +17413,9 @@
     },
     {
       "path": "apps/web/src/features/memory-workspace/MemoryGraph3D.tsx",
-      "sourceObjectId": "34a99f3d5257fce6cb4af9e3a56e887b77269c5b",
-      "sha256": "3079dc672c9ee6f6a7e3bb87c37326f1d934b218dbe346af612aac509cd33793",
-      "size": 10006
+      "sourceObjectId": "8ac57e20a9fdb5d4215274b68ae5a21a515b30ad",
+      "sha256": "6be14a8b297b3f26300a805adff9ed4f3c2513f22aa10a8357345678e31a7404",
+      "size": 22881
     },
     {
       "path": "apps/web/src/features/memory-workspace/MemoryGraphErrorBoundary.tsx",
@@ -17449,9 +17449,9 @@
     },
     {
       "path": "apps/web/src/features/memory-workspace/MemoryWorkspace.tsx",
-      "sourceObjectId": "0cbadd5439880f77f1d2e8086ecc8b1d5773bb1c",
-      "sha256": "e9817493f2f705c65e4afdc0aac54ab4cf225a0cb97cc2819442a9833aa53f2f",
-      "size": 14671
+      "sourceObjectId": "4f0f0604d9d339a61721d3d34a354a128a590849",
+      "sha256": "d50c1b6409895b06c4ce712aee360476d4908478c136a5693e5934205ee7d6cb",
+      "size": 16461
     },
     {
       "path": "apps/web/src/features/memory-workspace/MemoryWorkspaceErrorBoundary.tsx",
@@ -17461,9 +17461,9 @@
     },
     {
       "path": "apps/web/src/features/memory-workspace/memory-3d.ts",
-      "sourceObjectId": "512bdb7a3df4869903447fff2a892fcf6838970c",
-      "sha256": "b13db6d17c4c74ea41bbd86e8e238877fe4ed7c8e914914a75c65bb446b2440e",
-      "size": 6213
+      "sourceObjectId": "e035d87307981023f8c61e4b5b33ed9d08116dda",
+      "sha256": "d33dc33d68b6b3b9695ea127f40a421014ace505d69ff3a28adbad5e1693e8ae",
+      "size": 19832
     },
     {
       "path": "apps/web/src/features/memory-workspace/memory-atlas.css",
@@ -17497,9 +17497,9 @@
     },
     {
       "path": "apps/web/src/features/memory-workspace/memory-network-layout.worker.ts",
-      "sourceObjectId": "f46e5061271778e79f66c04f3fe31f3fe07fabf7",
-      "sha256": "fc54cf2d769930fd7dedca55afad0afc8c8abe0f85182e492679bf54d10f835b",
-      "size": 498
+      "sourceObjectId": "0e2bd388d484daf044eeb72370d950b2dd80749d",
+      "sha256": "2da8917ada2ebf046a57cf21e8f55c82675013b9a0e04f24c43f993c1b6f3032",
+      "size": 1159
     },
     {
       "path": "apps/web/src/features/notifications/NotificationCenterDock.tsx",
@@ -19334,8 +19334,8 @@
     {
       "path": "apps/web/src/live-api.ts",
       "sourceObjectId": "b8a928fa1a9fd8832351c62c872634c4b35e5e67",
-      "sha256": "0ed231c2591335d143f54ab3296d7421e8995af00468ef85c6c799ec68c1895d",
-      "size": 229740
+      "sha256": "bd34f36a250ad78f44bba0dbbd75be7081cb7fa4400c83962407d6f25e7e84ac",
+      "size": 229823
     },
     {
       "path": "apps/web/src/live/LiveSpaceApp.tsx",
@@ -23089,9 +23089,9 @@
     },
     {
       "path": "packages/contracts/src/schemas.ts",
-      "sourceObjectId": "696eb6d84d6580d5bd306b6373a6c930c54c8308",
-      "sha256": "3df2f5b7fb26f8e8061584f244c6ea8083a9dc08738b8be50007c3df13e59c24",
-      "size": 447443
+      "sourceObjectId": "7d35e6d495d4c2d05d6768875b6da1c8a8ee5cb6",
+      "sha256": "c38f17bc609ba09d13ae5fe8d247948ccfadca4189090d279ab389a386e4884c",
+      "size": 447667
     },
     {
       "path": "packages/contracts/src/source-control.ts",
