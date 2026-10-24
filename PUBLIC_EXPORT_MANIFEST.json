@@ -9817,9 +9817,9 @@
     },
     {
       "path": "apps/api/src/dot-goals.ts",
-      "sourceObjectId": "30dd69deed5768eb5afa1a3b5db7a437aef278ff",
-      "sha256": "203b72a1fcb28073092f48775d5629fce0d315c4c6b2352c0cb2c1d43b6b8dd2",
-      "size": 21302
+      "sourceObjectId": "0e558c436e20368520389f75e6e5d61ec2e6129e",
+      "sha256": "1684b2805d2edb2b4072bcc0df8177ef5a2032f672ecfea4d39220f138b41ad0",
+      "size": 21988
     },
     {
       "path": "apps/api/src/dot-home.ts",
@@ -10369,9 +10369,9 @@
     },
     {
       "path": "apps/api/src/memory-consolidation-coordinator.ts",
-      "sourceObjectId": "df237c648eb7317d7b00267a62b791c5a1cf824c",
-      "sha256": "f05504aaaee5437bcdcaf1df7922776085371492b98772503d102453f452d803",
-      "size": 3533
+      "sourceObjectId": "e6d49d309a11500d0cf0418daf812faf33c96b06",
+      "sha256": "8a175b6c53dcf93a9d9fa7fdf5b9a6d1c54e9afd22d9012c958da405b17c3f92",
+      "size": 3952
     },
     {
       "path": "apps/api/src/memory-embedding-backfill.ts",
@@ -10411,9 +10411,9 @@
     },
     {
       "path": "apps/api/src/memory-mutation-coordinator.ts",
-      "sourceObjectId": "f7d3d48bb65b4f816ed31c507630efb43bcf218e",
-      "sha256": "bc8c6c81a1f9ee1c36a4483ffc3191d9b9c41d9236c43189c405b913591516c9",
-      "size": 3483
+      "sourceObjectId": "9b4ef445b81eb61b60dea7017e453492acb0f04e",
+      "sha256": "d4bcbf26e0e6a367b388a4d24f1b9428eb0f09c72270bf4f99b7564d50d67942",
+      "size": 3897
     },
     {
       "path": "apps/api/src/memory-routes.ts",
@@ -11000,8 +11000,8 @@
     {
       "path": "apps/api/src/room-agent.ts",
       "sourceObjectId": "c14ea96bd8ee0456fe946ffb2d366bbcfdda8af2",
-      "sha256": "c50966d798f7e6e7d2413b1c0b64017160ac884fa0298e52ced6e60f831d6cb0",
-      "size": 59738
+      "sha256": "fac84fbd13a44ec24ede0fb9cb14c5519a44c377dbb079fbb758521f2312413b",
+      "size": 60155
     },
     {
       "path": "apps/api/src/room-cli-menu.ts",
@@ -11611,9 +11611,9 @@
     },
     {
       "path": "apps/api/src/trace-context.ts",
-      "sourceObjectId": "af9e55efd9dc8905b171728b5203ebf1033c0b00",
-      "sha256": "aed5a9c5c0abbca4a52fafa01385ee250808c0a7b157b2ed7ddc4517519ced9f",
-      "size": 5319
+      "sourceObjectId": "89f21c025b720e781e4568bc86a8e382cb5f0464",
+      "sha256": "d807d495cc61d3e3c6a19a16a0030e63eab40c6bf9159a9b60229c6c0b102542",
+      "size": 5523
     },
     {
       "path": "apps/api/src/trace-routes.ts",
@@ -13081,9 +13081,9 @@
     },
     {
       "path": "apps/api/tests/memory-consolidation-coordinator.test.ts",
-      "sourceObjectId": "3ff07aecb57610c4cf2696f46ef0252231466e3d",
-      "sha256": "34777f76474067f02d4233f6b8ccf9077d755bcf62973971b2cb315d09679634",
-      "size": 1821
+      "sourceObjectId": "0aca5f6498956a60c2b14e5a305a4bc97e4cd021",
+      "sha256": "4e964c048b240bb3f10ebd8e3e4d40768fcbee55396552f672a65870910a9fcc",
+      "size": 2773
     },
     {
       "path": "apps/api/tests/memory-embedding-backfill.test.ts",
@@ -13129,9 +13129,9 @@
     },
     {
       "path": "apps/api/tests/memory-mutation-coordinator.test.ts",
-      "sourceObjectId": "e07db2b5600ed11e11b49e79057869aa0c64a1a0",
-      "sha256": "681e640f6ce307bc6fec466d41bf29d4a6ef9c5254dde113156c248457a20247",
-      "size": 3472
+      "sourceObjectId": "4ac5cdbe24b29e5606176d68dcabd4cef1c8b3e0",
+      "sha256": "7a481f34268f1edbc4d0a264386f586f8a1bfda0b5df305cbc0abda6563a354a",
+      "size": 4363
     },
     {
       "path": "apps/api/tests/memory-source-topology.test.ts",
@@ -21679,9 +21679,9 @@
     },
     {
       "path": "apps/worker/package.json",
-      "sourceObjectId": "d7a484ac8fb49132203bfc4d1ab01b1d6d975739",
-      "sha256": "b357357c037bd4c33c50d75618437ff36dc461365eac63d74355de1740de348c",
-      "size": 869
+      "sourceObjectId": "936ad0ea0d3ef84d10e91251b6d8097cfbe92998",
+      "sha256": "b01e11c862a7d75f67e153d40f8b1e3c134b050d6a42bfe43e5e348388cc4084",
+      "size": 906
     },
     {
       "path": "apps/worker/src/activities.ts",
@@ -21691,9 +21691,9 @@
     },
     {
       "path": "apps/worker/src/activity-observability.ts",
-      "sourceObjectId": "ea4d021d146c3b4f47ed562059b46599a10a22cc",
-      "sha256": "0acc1182c34352967649dfe981f9b494f04197a9701cdec4a4d6c0f67c8ebb6e",
-      "size": 9912
+      "sourceObjectId": "f4ec4d1b99bb9722286495761ab4a0b553b34247",
+      "sha256": "bb4f93dc23d4261077ed4028a264c8896d84522655e48adf97803e5b68195dcb",
+      "size": 11584
     },
     {
       "path": "apps/worker/src/browser-action-bridge.ts",
@@ -21799,9 +21799,9 @@
     },
     {
       "path": "apps/worker/src/memory-maintenance-worker.ts",
-      "sourceObjectId": "e1204603380890564b6f9735425fe94e5e1efa6a",
-      "sha256": "31425b782c91050c39ca7a1b93d9e2511043f2f0c944b2454d236bc7023d4c95",
-      "size": 2228
+      "sourceObjectId": "1d94682936358a0f31c7ecc9733ad0be6324799b",
+      "sha256": "b482aa1f88d3cae47550fc342e0a760d272a49b92b28bd5c9f47233fdb0957ba",
+      "size": 2501
     },
     {
       "path": "apps/worker/src/memory-maintenance-workflows.ts",
@@ -21823,9 +21823,9 @@
     },
     {
       "path": "apps/worker/src/memory-mutation-worker.ts",
-      "sourceObjectId": "c2eadf65757cfe9070c1543c57c9e6e102c5c770",
-      "sha256": "581d177fb52b62a50ac0df8937ccbca3b457637128a68aedd07fce3048fa7881",
-      "size": 1859
+      "sourceObjectId": "cf13726878f5ab084bd6dc29ec93bbc902205e1c",
+      "sha256": "e82a7073826388a1584fa4fdf4774c22f343e7228c028ccdf5739736a14384a1",
+      "size": 2124
     },
     {
       "path": "apps/worker/src/memory-mutation-workflows.ts",
@@ -21865,9 +21865,9 @@
     },
     {
       "path": "apps/worker/src/room-background-continuation.ts",
-      "sourceObjectId": "e15c29a216a22ee882c946d85431a2aa83ea0375",
-      "sha256": "ee450848d1b37d24d935440e56b9c9e34b442567b7f2e448be5c0570589cd6a6",
-      "size": 12970
+      "sourceObjectId": "19515ee08ade0c39a9637c90d91a9a220af00db8",
+      "sha256": "292808648b31d03e61ddd16c2b48a8278c3f2df674010641ae90def43bca2f5d",
+      "size": 13809
     },
     {
       "path": "apps/worker/src/room-supervisor-state.ts",
@@ -21932,8 +21932,8 @@
     {
       "path": "apps/worker/src/worker.ts",
       "sourceObjectId": "6c33ef92a3384a0d54cc5239b8251a40a20be79f",
-      "sha256": "92c304f272e4652e763525fe65245b884ac80dd7b01b92e31371b3a5053bdfbd",
-      "size": 8841
+      "sha256": "7ea7f8cdc5e23aab6a6dab503c0540dae88721d0a611797b8f133dec98ae50ef",
+      "size": 9098
     },
     {
       "path": "apps/worker/src/workflows.ts",
@@ -21943,9 +21943,9 @@
     },
     {
       "path": "apps/worker/tests/activity-observability.test.ts",
-      "sourceObjectId": "654bf7962ec575ff6a0197177c8a15d2e3798272",
-      "sha256": "dc55d02187f929e2a608aec4cc174083b65ae4fde1c6f3dafffc7d222ae5da0f",
-      "size": 12002
+      "sourceObjectId": "642263492438fb15b2beed0a86f39d11ed3d9a98",
+      "sha256": "02f176cc3fbbca5c4d049b5be47ed27f1676ddc4d7aeefa82ad0f1589e6beede",
+      "size": 12107
     },
     {
       "path": "apps/worker/tests/chat-task-run.test.ts",
@@ -22369,9 +22369,9 @@
     },
     {
       "path": "docs/configuration-reference.md",
-      "sourceObjectId": "e432af4c60c2773b6522fcb207cbda1b6bb85faa",
-      "sha256": "6a058d4a9d836fb0cf5e69e6743ca5db993284e52ff3795eac2bc115cfb29b6d",
-      "size": 3122
+      "sourceObjectId": "ce60c5f6fcea07e85186cd2afd0b28a43324a889",
+      "sha256": "f38966253486688186832a3ab25d7d9e93e96a8cfa630b5b7bb65eee33eec720",
+      "size": 4610
     },
     {
       "path": "docs/quality/KNOWN_LIMITATIONS.md",
@@ -22442,8 +22442,8 @@
     {
       "path": "docs/quality/observability.md",
       "sourceObjectId": "bb1d297a756df1f0eba5f886da24666b4e186b68",
-      "sha256": "09bf55f2566a84875c7a9763b2424a6d0f8c677993ab84d018d126b43a35849d",
-      "size": 20419
+      "sha256": "bac9175a644d8977fd17559e6ac6264a12e94e33e4e6bbed63e50d3da0afd5fd",
+      "size": 21581
     },
     {
       "path": "docs/quality/pause-checkpoint-2026-10-03.md",
@@ -22514,8 +22514,8 @@
     {
       "path": "package-lock.json",
       "sourceObjectId": "1ea4513f4be841459363186921c3695db73cfd0a",
-      "sha256": "f6c745fb50ff3c0301e5f7dec24815438f86470f7e7e668496a755d0100d5c1a",
-      "size": 419142
+      "sha256": "a8ce8432cb46af88a5cd3df09a6fb2058a8683df99a236156e6d6e3bf40d577d",
+      "size": 419876
     },
     {
       "path": "package.json",
@@ -23089,9 +23089,9 @@
     },
     {
       "path": "packages/contracts/src/schemas.ts",
-      "sourceObjectId": "696eb6d84d6580d5bd306b6373a6c930c54c8308",
-      "sha256": "3df2f5b7fb26f8e8061584f244c6ea8083a9dc08738b8be50007c3df13e59c24",
-      "size": 447443
+      "sourceObjectId": "bca7e2782f5e9dd99b6a79e93eecf6c2dbe2a051",
+      "sha256": "3fe548f6c8b6fe2989dd96a31fd3f28dcb4ffdb1f224942a5d2aea18b9c7e3ab",
+      "size": 447634
     },
     {
       "path": "packages/contracts/src/source-control.ts",
@@ -27859,9 +27859,9 @@
     },
     {
       "path": "packages/runtime/src/otlp-span-exporter.ts",
-      "sourceObjectId": "86a0edf055e4ec7b12e3a6d03edb6013f5c0f284",
-      "sha256": "13736a1d326eb65bc8192ce71060066f4b2c9516b7d1277a62cbac4815877ffc",
-      "size": 5524
+      "sourceObjectId": "9f454214d3f0c2934a389494c2c77901dc932c7a",
+      "sha256": "64e92965e4370cdeb330087eb845f02c36f346b2a5eafa3d1ac490202dd0da1e",
+      "size": 6868
     },
     {
       "path": "packages/runtime/src/plan-execution-projection.ts",

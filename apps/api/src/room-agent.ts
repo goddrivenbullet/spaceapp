@@ -213,6 +213,7 @@ export class TemporalRoomAgentWorkflowCoordinator implements RoomAgentWorkflowCo
     } finally { await lease.close(); }
   }
 
+  /** Signals or starts the room agent supervisor workflow with per-turn W3C trace context. */
   async enqueue(rawItem: RoomAgentSupervisorQueueItem): Promise<{ workflowId: string; runId: string | null }> {
     const parsed = roomAgentSupervisorQueueItemSchema.parse(rawItem);
     // The queued turn carries the originating request's W3C trace context to
@@ -225,6 +226,13 @@ export class TemporalRoomAgentWorkflowCoordinator implements RoomAgentWorkflowCo
         workflowId,
         taskQueue: this.options.taskQueue,
         args: [{ roomId: item.turn.roomId, pending: [], processedCount: 0 }],
+        // Only used if signalWithStart starts the supervisor. Later requests
+        // arrive as signals and keep their own per-turn trace context.
+        memo: workflowCorrelationMemo({
+          traceId: item.turn.traceId,
+          traceparent: item.turn.traceparent,
+          missionId: item.missionId
+        }),
         signal: ROOM_AGENT_ENQUEUE_SIGNAL,
         signalArgs: [item]
       });
