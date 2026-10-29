@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { WorkflowHandle } from "@temporalio/client";
@@ -76,7 +76,10 @@ export async function withSandbox<T>(options: SandboxOptions, run: (context: San
       const json = JSON.stringify({ workflowId: handle.workflowId, history: recorded }, (key, value) =>
         key === "identity" ? "space-synthetic-test-worker" : key === "stackTrace" ? "" : value, 2);
       await mkdir(fixtureDirectory, { recursive: true });
-      await writeFile(join(fixtureDirectory, `${name}.json`), `${json}\n`);
+      const targetPath = join(fixtureDirectory, `${name}.json`);
+      const tempPath = join(fixtureDirectory, `.${name}.${randomUUID()}.tmp`);
+      await writeFile(tempPath, `${json}\n`);
+      await rename(tempPath, targetPath);
     };
     const queues = [...new Set([taskQueue, ...options.taskQueues ?? []])];
     const runWorkers = async (index: number): Promise<T> => {
